@@ -1,3 +1,7 @@
+# Files with no extension
 *
 !/**/
 !*.*
+
+# VS Code settings
+.vscode
