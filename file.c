@@ -21,3 +21,29 @@ char *read_file(const char *filename)
 
     return buffer;
 }
+
+long *read_numbers_from_file(const char *filename, size_t *count, int radix)
+{
+    char *buffer = read_file(filename);
+    char *ptr = buffer;
+
+    while (*ptr != 0)
+    {
+        while (!isdigit(*ptr)) ++ptr;
+        while (isdigit(*ptr)) ++ptr;
+        ++ptr;
+        ++(*count);
+    }
+
+    long *numbers = malloc(sizeof(long) * *count);
+    ptr = buffer;
+    for (size_t i = 0; i < *count; ++i)
+    {
+        while (!isdigit(*ptr)) ++ptr;
+        numbers[i] = strtol(ptr, &ptr, radix);
+    }
+
+    free(buffer);
+
+    return numbers;
+}
