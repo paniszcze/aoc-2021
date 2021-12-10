@@ -24,16 +24,16 @@ long read_power_consumption(long *numbers, size_t count)
     return gamma * epsilon;
 }
 
-typedef struct record
+typedef struct Record
 {
     long value;
     bool discarded_oxy;
     bool discarded_co2;
-} record;
+} Record;
 
 long read_life_support(long *numbers, size_t count)
 {
-    record records[count];
+    Record records[count];
     for (size_t i = 0; i < count; ++i)
     {
         records[i].value = numbers[i];
