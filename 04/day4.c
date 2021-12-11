@@ -129,18 +129,23 @@ long bingo(char *buffer, int mode)
             ++boards_count;
     }
 
+    size_t boards_left = boards_count;
     for (size_t i = 0; i < nums_count; ++i)
     {
         for (size_t j = 0; j < boards_count; ++j)
         {
-            if (mode)
+            if (mark_number(&boards[j], numbers[i]) &&
+                !boards[j].won &&
+                check_win(&boards[j]))
             {
-                if (mark_number(&boards[j], numbers[i]) && check_win(&boards[j]))
+                if (mode)
                     return sum_unmarked(&boards[j]) * numbers[i];
-            }
-            else
-            {
-                return 0;
+                else
+                {
+                    --boards_left;
+                    if (boards_left == 0)
+                        return sum_unmarked(&boards[j]) * numbers[i];
+                }
             }
         }
     }
@@ -154,7 +159,7 @@ int main()
 
     printf("Day 4!\n");
     printf("* pt. 1: %ld\n", bingo(buffer, WIN));
-    // printf("* pt. 2: %ld\n", bingo(buffer. LOOSE));
+    printf("* pt. 2: %ld\n", bingo(buffer, LOOSE));
 
     free(buffer);
 
