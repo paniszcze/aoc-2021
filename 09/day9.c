@@ -1,11 +1,72 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "../file.c"
 
-#define WIDTH 10
-#define HEIGHT 5
+#define WIDTH 100
+#define HEIGHT 100
 
-long find_lowpoint(char *buffer)
+bool is_lowpoint(long map[HEIGHT][WIDTH], size_t row, size_t col)
+{
+    if (row == 0)
+    {
+        if (col == 0)
+        {
+            return (map[row + 1][col] > map[row][col] && map[row][col + 1] > map[row][col]);
+        }
+        else if (col == WIDTH - 1)
+        {
+            return (map[row + 1][col] > map[row][col] && map[row][col - 1] > map[row][col]);
+        }
+        else
+        {
+            return (map[row + 1][col] > map[row][col] &&
+                    map[row][col + 1] > map[row][col] &&
+                    map[row][col - 1] > map[row][col]);
+        }
+    }
+    else if (row == HEIGHT - 1)
+    {
+        if (col == 0)
+        {
+            return (map[row - 1][col] > map[row][col] && map[row][col + 1] > map[row][col]);
+        }
+        else if (col == WIDTH - 1)
+        {
+            return (map[row - 1][col] > map[row][col] && map[row][col - 1] > map[row][col]);
+        }
+        else
+        {
+            return (map[row - 1][col] > map[row][col] &&
+                    map[row][col + 1] > map[row][col] &&
+                    map[row][col - 1] > map[row][col]);
+        }
+    }
+    else
+    {
+        if (col == 0)
+        {
+            return (map[row - 1][col] > map[row][col] &&
+                    map[row + 1][col] > map[row][col] &&
+                    map[row][col + 1] > map[row][col]);
+        }
+        else if (col == WIDTH - 1)
+        {
+            return (map[row - 1][col] > map[row][col] &&
+                    map[row + 1][col] > map[row][col] &&
+                    map[row][col - 1] > map[row][col]);
+        }
+        else
+        {
+            return (map[row - 1][col] > map[row][col] &&
+                    map[row + 1][col] > map[row][col] &&
+                    map[row][col - 1] > map[row][col] &&
+                    map[row][col + 1] > map[row][col]);
+        }
+    }
+}
+
+long sum_risk_levels(char *buffer)
 {
     long hightmap[HEIGHT][WIDTH] = {0};
     long sum = 0;
@@ -21,63 +82,22 @@ long find_lowpoint(char *buffer)
     {
         for (size_t j = 0; j < WIDTH; ++j)
         {
-            if (i == 0)
+            if (is_lowpoint(hightmap, i, j))
             {
-                if (j == 0)
-                {
-
-                }
-                else if (j == WIDTH - 1)
-                {
-
-                }
-                else
-                {
-
-                }
-            }
-            else if (i == HEIGHT - 1)
-            {
-                if (j == 0)
-                {
-
-                }
-                else if (j == WIDTH - 1)
-                {
-
-                }
-                else
-                {
-                    
-                }
-            }
-            else
-            {
-                if (j == 0)
-                {
-
-                }
-                else if (j == WIDTH - 1)
-                {
-
-                }
-                else
-                {
-                    
-                }
+                sum += hightmap[i][j] + 1;
             }
         }
     }
 
-    return 1;
+    return sum;
 }
 
 int main()
 {
-    char *buffer = read_file("sample.txt");
+    char *buffer = read_file("input.txt");
 
     printf("Day 9!\n");
-    printf("* pt. 1: %ld\n", find_lowpoint(buffer));
+    printf("* pt. 1: %ld\n", sum_risk_levels(buffer));
     // printf("* pt. 2: %ld\n", lava(buffer));
 
     free(buffer);
