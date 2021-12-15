@@ -10,6 +10,9 @@
 
 #define DIRECTIONS 8
 
+#define FLASHES 1
+#define SYNCHRO 0
+
 void print_levels(long array[][SIZE])
 {
     for (size_t i = 0; i < SIZE; ++i)
@@ -25,7 +28,6 @@ void print_levels(long array[][SIZE])
                 printf("\x1b[38;5;208m%ld\x1b[0m", array[i][j]);
             else
                 printf("\x1b[38;5;202m%ld\x1b[0m", array[i][j]);
-
         printf("\n");
     }
 }
@@ -34,6 +36,11 @@ static void back()
 {
     printf("\x1b[%dD", SIZE);
     printf("\x1b[%dA", SIZE);
+}
+
+static void forward()
+{
+    printf("\x1b[%dB", SIZE);
 }
 
 void increase_neighbours(long array[][SIZE], bool flashed[][SIZE], size_t row, size_t col)
@@ -61,10 +68,10 @@ void increase_neighbours(long array[][SIZE], bool flashed[][SIZE], size_t row, s
     }
 }
 
-long count_flashes(char *buffer)
+long count_flashes(char *buffer, int mode)
 {
     long energy[SIZE][SIZE] = {0};
-    size_t flash_count = 0;
+    size_t step_count = 0, flash_count = 0, flashes_per_step = 0;
     bool flashing = false;
 
     for (size_t i = 0; i < SIZE; ++i)
@@ -74,9 +81,10 @@ long count_flashes(char *buffer)
         ++buffer;
     }
 
-    for (size_t steps = 0; steps < STEPS; ++steps)
+    while (mode ? step_count < STEPS : flashes_per_step < SIZE * SIZE)
     {
         bool flashed[SIZE][SIZE] = {0};
+        flashes_per_step = 0;
 
         for (size_t i = 0; i < SIZE; ++i)
             for (size_t j = 0; j < SIZE; ++j)
@@ -93,27 +101,29 @@ long count_flashes(char *buffer)
                         energy[i][j] = 0;
                         flashed[i][j] = true;
                         ++flash_count;
+                        ++flashes_per_step;
                         increase_neighbours(energy, flashed, i, j);
                         flashing = true;
                     }
         }
 
+        ++step_count;
         print_levels(energy);
-        if (steps != STEPS - 1)
-            back();
+        back();
         usleep(120000);
     }
+    forward();
 
-    return flash_count;
+    return mode ? flash_count : step_count;
 }
 
 int main()
 {
-    char *buffer = read_file("sample.txt");
+    char *buffer = read_file("input.txt");
 
     printf("Day 11!\n");
-    printf("* pt. 1: %ld\n", count_flashes(buffer));
-    // printf("* pt. 2: %ld\n", octo(buffer));
+    printf("* pt. 1: %ld\n", count_flashes(buffer, FLASHES));
+    printf("* pt. 2: %ld\n", count_flashes(buffer, SYNCHRO));
 
     free(buffer);
 
