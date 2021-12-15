@@ -22,7 +22,9 @@ bool is_open(char ch, size_t *bracket)
 
 int compare(const void *a, const void *b)
 {
-    return *(long *)b - *(long *)a;
+    long va = *(long *)a;
+    long vb = *(long *)b;
+    return (va > vb) - (va < vb);
 }
 
 long score_lines(char *buffer, int mode)
@@ -31,7 +33,7 @@ long score_lines(char *buffer, int mode)
     long scores_incomplete[BRACKET_TYPES] = {1, 2, 3, 4};
     long score_corrupted = 0, score_incomplete = 0;
 
-    long scores_buffer[LINES + 10] = {0};
+    long scores_buffer[LINES] = {0};
     size_t scores_count = 0;
 
     for (size_t i = 0; i < LINES; ++i)
@@ -44,9 +46,7 @@ long score_lines(char *buffer, int mode)
         {
             size_t bracket_type;
             if (is_open(*buffer, &bracket_type))
-            {
                 stack[stack_top++] = bracket_type;
-            }
             else
             {
                 if (stack_top <= 0 || stack[stack_top - 1] != bracket_type)
@@ -62,19 +62,13 @@ long score_lines(char *buffer, int mode)
 
         if (!mode && !found_error)
         {
-            printf("%lu: ", stack_top);
-
             long score_incomplete_tmp = 0;
 
             for (size_t i = 0; i < stack_top; ++i)
             {
-                printf("%lu ", stack[stack_top - 1 - i]);
                 score_incomplete_tmp *= 5;
                 score_incomplete_tmp += scores_incomplete[stack[stack_top - 1 - i]];
             }
-                printf("%lu ", stack[0]);
-
-            printf("- %lu\n", score_incomplete_tmp);
             scores_buffer[scores_count++] = score_incomplete_tmp;
         }
 
@@ -82,7 +76,6 @@ long score_lines(char *buffer, int mode)
             ++buffer;
         ++buffer;
     }
-            printf("cnt %lu\n", scores_count);
 
     qsort(scores_buffer, scores_count, sizeof(long), compare);
     score_incomplete = scores_buffer[scores_count >> 1];
