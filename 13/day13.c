@@ -6,8 +6,8 @@
 #include "../file.c"
 #include "../strings.c"
 
-#define MAX_SIZE 20
-#define MAX_COMMANDS 5
+#define MAX_SIZE 1500
+#define MAX_COMMANDS 15
 
 #define FIRST_STEP 1
 #define ALL_STEPS 0
@@ -63,51 +63,62 @@ long fold_paper(char *buffer, int mode)
         ++buffer;
     }
 
-    // fold the paper
+    // execute the commands
     size_t steps = mode == FIRST_STEP ? 1 : commands_count;
     for (size_t i = 0; i < steps; ++i)
     {
-        printf("Step %lu:\n", i + 1);
-        if (commands[i].axis == 'x')
+        for (size_t row = 0; row <= height; ++row)
         {
-
-        }
-        else
-        {
-            for (size_t row = 0; row <= height; ++row)
+            for (size_t col = 0; col <= width; ++col)
             {
-                for (size_t col = 0; col <= width; ++col)
+                switch (commands[i].axis)
                 {
+                case 'x':
+                    if (col > commands[i].fold && paper_sheet[row][col] == true)
+                    {
+                        size_t n_col = commands[i].fold - (col - commands[i].fold);
+                        paper_sheet[row][n_col] = true;
+                    }
+                    break;
+                case 'y':
                     if (row > commands[i].fold && paper_sheet[row][col] == true)
                     {
-                        size_t n_row = (row + commands[i].fold) % commands[i].fold;
+                        size_t n_row = commands[i].fold - (row - commands[i].fold);
                         paper_sheet[n_row][col] = true;
                     }
+                    break;
+                default:
+                    break;
                 }
             }
-
-            height -= commands[i].fold;
         }
+
+        if (commands[i].axis == 'x')
+            width = commands[i].fold;
+        else
+            height = commands[i].fold;
     }
 
     // print the sheet
-    for (size_t i = 0; i <= height; ++i)
-    {
-        for (size_t j = 0; j <= width; ++j)
-            printf("%c ", commands[0].fold == i ? '-' : (paper_sheet[i][j] ? 'x' : '.'));
-        printf("\n");
-    }
+    if (mode == ALL_STEPS)
+        for (size_t i = 0; i <= height; ++i)
+        {
+            for (size_t j = 0; j <= width; ++j)
+                printf("%c ", paper_sheet[i][j] ? 'X' : ' ');
+            printf("\n");
+        }
 
     return count_dots(paper_sheet, height, width);
 }
 
 int main()
 {
-    char *buffer = read_file("sample.txt");
+    char *buffer = read_file("input.txt");
 
     printf("Day 13!\n");
     printf("* pt. 1: %ld\n", fold_paper(buffer, FIRST_STEP));
-    // printf("* pt. 2: %ld\n", fold_paper(buffer, ALL_STEPS));
+    printf("* pt. 2:\n");
+    fold_paper(buffer, ALL_STEPS);
 
     free(buffer);
 
