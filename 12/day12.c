@@ -9,6 +9,9 @@
 #define MAX_CAVES 20
 #define MAX_NAME_LEN 10
 
+#define ONCE 1
+#define TWICE 0
+
 void find_cave_names(char *buffer,
                      char names[][MAX_NAME_LEN],
                      bool is_big[MAX_CAVES],
@@ -113,7 +116,50 @@ void search_paths(size_t begin, size_t end,
     }
 }
 
-long count_possible_paths(char *buffer)
+void search_paths2(size_t begin, size_t end,
+                  size_t caves_count, size_t *paths_count,
+                  bool adjacency_matrix[MAX_CAVES][MAX_CAVES],
+                  size_t visited[MAX_CAVES],
+                  bool is_big[MAX_CAVES],
+                  bool small_twice,
+                  char names[][MAX_NAME_LEN])
+{
+    if (begin == end)
+    {
+        // printf("%s\n", names[begin]);
+        ++(*paths_count);
+        return;
+    }
+
+    for (size_t i = 0; i < caves_count; ++i)
+    {
+        if (adjacency_matrix[begin][i])
+        {
+            if (is_big[i])
+            {
+                visited[i] += 1;
+                // printf("%s -> ", names[begin]);
+                search_paths2(i, 1, caves_count, paths_count, adjacency_matrix, visited, is_big, small_twice, names);
+            }
+            else if (visited[i] < 1)
+            {
+                visited[i] += 1;
+                // printf("%s -> ", names[begin]);
+                search_paths2(i, 1, caves_count, paths_count, adjacency_matrix, visited, is_big, small_twice, names);
+                visited[i] -= 1;
+            }
+            else if (!small_twice && i != 0)
+            {
+                visited[i] += 1;
+                // printf("%s -> ", names[begin]);
+                search_paths2(i, 1, caves_count, paths_count, adjacency_matrix, visited, is_big, true, names);
+                visited[i] -= 1;
+            }
+        }
+    }
+}
+
+long count_possible_paths(char *buffer, int mode)
 {
     char cave_names[MAX_CAVES][MAX_NAME_LEN] = {0};
     bool is_big[MAX_CAVES] = {0};
@@ -125,25 +171,34 @@ long count_possible_paths(char *buffer)
     track_adjacencies(buffer, cave_names, caves_count, adjacency_matrix);
 
     size_t paths_count = 0;
-    visited[0] = 1;
-    search_paths(0, 1, caves_count, &paths_count, adjacency_matrix, visited, is_big);
+    if (mode)
+    {
+        visited[0] = 1;
+        search_paths(0, 1, caves_count, &paths_count, adjacency_matrix, visited, is_big);
+    }
+    else
+    {
+        visited[0] = 2;
+        search_paths2(0, 1, caves_count, &paths_count, adjacency_matrix, visited, is_big, TWICE, cave_names);
+    }
+
 
     /****************************************/
 
-    printf("Found %lu caves:\n", caves_count);
-    for (size_t i = 0; i < caves_count; ++i)
-    {
-        printf("[%2lu / %d / %lu] %s\n", i, is_big[i], visited[i], cave_names[i]);
-    }
+    // printf("\nFound %lu caves:\n", caves_count);
+    // for (size_t i = 0; i < caves_count; ++i)
+    // {
+    //     printf("[%2lu / %d / %lu ] %s\n", i, is_big[i], visited[i], cave_names[i]);
+    // }
 
-    printf("\n");
-    for (size_t i = 0; i < caves_count; ++i)
-    {
-        for (size_t j = 0; j < caves_count; ++j)
-            printf("%d ", adjacency_matrix[i][j]);
-        printf("\n");
-    }
-    printf("\n");
+    // printf("\n");
+    // for (size_t i = 0; i < caves_count; ++i)
+    // {
+    //     for (size_t j = 0; j < caves_count; ++j)
+    //         printf("%d ", adjacency_matrix[i][j]);
+    //     printf("\n");
+    // }
+    // printf("\n");
 
     return paths_count;
 }
@@ -153,8 +208,8 @@ int main()
     char *buffer = read_file("input.txt");
 
     printf("Day 12!\n");
-    printf("* pt. 1: %ld\n", count_possible_paths(buffer));
-    // printf("* pt. 2: %ld\n", find_passage(buffer));
+    printf("* pt. 1: %ld\n", count_possible_paths(buffer, ONCE));
+    printf("* pt. 2: %ld\n", count_possible_paths(buffer, TWICE));
 
     free(buffer);
 
