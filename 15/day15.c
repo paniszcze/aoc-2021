@@ -87,11 +87,11 @@ void find_next_node(Node map[][WIDTH],
 
 long find_lowest_risk()
 {
-    // store risk levels from input in an map
+    // store risk levels from input in an array of structs
     Node map[HEIGHT][WIDTH] = {0};
     get_input(map);
 
-    // set the tentative risk of all nodes to maximal value (except the initial point)
+    // set the tentative risk of the initial point to zero
     map[0][0].risk = 0;
 
     // find the safest path
