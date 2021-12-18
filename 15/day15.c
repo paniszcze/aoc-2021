@@ -8,8 +8,6 @@
 #define HEIGHT 100
 #define DIRECTIONS 4
 
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
-
 long directions[DIRECTIONS][2] =
 {
     {-1,  0},
