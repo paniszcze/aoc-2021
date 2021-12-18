@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <limits.h>
-#include "../array.c"
 #include "../file.c"
 
 #define WIDTH 100
@@ -19,7 +18,15 @@ long directions[DIRECTIONS][2] =
     { 0,  1}
 };
 
-void get_input(long array[][WIDTH])
+typedef struct Node
+{
+    long value;
+    size_t risk;
+    bool visited;
+    bool enqueued;
+} Node;
+
+void get_input(Node map[][WIDTH])
 {
     char *buffer = read_file("input.txt");
     char *ptr = buffer;
@@ -27,17 +34,19 @@ void get_input(long array[][WIDTH])
     for (size_t i = 0; i < HEIGHT; ++i)
     {
         for (size_t j = 0; j < WIDTH; ++j)
-            array[i][j] = *ptr++ - '0';
+        {
+            map[i][j].value = *ptr++ - '0';
+            map[i][j].risk = ULONG_MAX;
+            map[i][j].visited = false;
+            map[i][j].enqueued = false;
+        }
         ++ptr;
     }
 
     free(buffer);
 }
 
-void update_neighbours(long risk_map[][WIDTH],
-                       size_t risk_level[][WIDTH],
-                       bool visited[][WIDTH],
-                       bool enqueued[][WIDTH],
+void update_neighbours(Node map[][WIDTH],
                        size_t row,
                        size_t col)
 {
@@ -46,31 +55,32 @@ void update_neighbours(long risk_map[][WIDTH],
         size_t n_row = row + directions[i][0];
         size_t n_col = col + directions[i][1];
         if (0 <= n_row && n_row < HEIGHT && 0 <= n_col && n_col < WIDTH)
-            if (!visited[n_row][n_col])
+            if (!map[n_row][n_col].visited)
             {
-                size_t tentative_risk = risk_level[row][col] + risk_map[n_row][n_col];
-                risk_level[n_row][n_col] = MIN(risk_level[n_row][n_col], tentative_risk);
-                enqueued[n_row][n_col] = true;
+                size_t tentative_risk = map[row][col].risk + map[n_row][n_col].value;
+                if (tentative_risk < map[n_row][n_col].risk)
+                {
+                    map[n_row][n_col].risk = tentative_risk;
+                    map[n_row][n_col].enqueued = true;
+                }
             }
     }
 
-    visited[row][col] = true;
-    enqueued[row][col] = false;
+    map[row][col].visited = true;
+    map[row][col].enqueued = false;
 }
 
-void find_next(size_t risk_level[][WIDTH],
-               bool visited[][WIDTH],
-               bool enqueued[][WIDTH],
-               size_t *row,
-               size_t *col)
+void find_next_node(Node map[][WIDTH],
+                    size_t *row,
+                    size_t *col)
 {
     size_t lowest = ULONG_MAX;
     for (size_t i = 0; i < HEIGHT; ++i)
         for (size_t j = 0; j < WIDTH; ++j)
         {
-            if (enqueued[i][j] && !visited[i][j] && risk_level[i][j] < lowest)
+            if (map[i][j].enqueued && !map[i][j].visited && map[i][j].risk < lowest)
             {
-                lowest = risk_level[i][j];
+                lowest = map[i][j].risk;
                 *row = i;
                 *col = j;
             }
@@ -79,30 +89,22 @@ void find_next(size_t risk_level[][WIDTH],
 
 long find_lowest_risk()
 {
-    // store risk levels from input in an array
-    long risk_map[HEIGHT][WIDTH] = {0};
-    get_input(risk_map);
-
-    // mark all nodes as unvisited
-    bool visited[HEIGHT][WIDTH] = {0};
+    // store risk levels from input in an map
+    Node map[HEIGHT][WIDTH] = {0};
+    get_input(map);
 
     // set the tentative risk of all nodes to maximal value (except the initial point)
-    size_t risk_level[HEIGHT][WIDTH];
-    for (size_t i = 0; i < HEIGHT; ++i)
-        for (size_t j = 0; j < WIDTH; ++j)
-            risk_level[i][j] = ULONG_MAX;
-    risk_level[0][0] = 0;
+    map[0][0].risk = 0;
 
     // find the safest path
-    bool enqueued[HEIGHT][WIDTH] = {0};
     size_t row = 0, col = 0;
-    while (!visited[HEIGHT - 1][WIDTH - 1])
+    while (!map[HEIGHT - 1][WIDTH - 1].visited)
     {
-        update_neighbours(risk_map, risk_level, visited, enqueued, row, col);
-        find_next(risk_level, visited, enqueued, &row, &col);
+        update_neighbours(map, row, col);
+        find_next_node(map, &row, &col);
     }
 
-    return risk_level[HEIGHT - 1][WIDTH - 1];
+    return map[HEIGHT - 1][WIDTH - 1].risk;
 }
 
 int main()
