@@ -64,7 +64,7 @@ void read_packet(u_int8_t *bits,
     *version_sum += version;
 
     u_int64_t type_id = read_nbits(bits, pos, TYP_BITS);
-    // printf("type %llu, ver %llu, pos %lu\n", type_id, version, *pos);
+    printf("type %llu, ver %llu, pos %lu\n", type_id, version, *pos);
 
     if (type_id == 4)
     {
@@ -73,8 +73,6 @@ void read_packet(u_int8_t *bits,
             prefix = read_nbits(bits, pos, PFX_BITS);
             *pos += 4;                                  // TODO: read the value
         } while (prefix != 0);
-        if (*pos > *last_pos)
-            pad_pos(pos);
     }
     else
     {
@@ -84,32 +82,29 @@ void read_packet(u_int8_t *bits,
         {
             u_int64_t lenght = read_nbits(bits, pos, LEN_BITS);
             u_int64_t end = *pos + lenght;
+            printf("-- len %llu\n", lenght);
             while (*pos < end && *pos <= *last_pos)
                 read_packet(bits, pos, last_pos, version_sum, final_value);
-            pad_pos(pos);
         }
         else
         {
             u_int64_t packet_num = read_nbits(bits, pos, NUM_BITS);
-            // printf("-- num %llu\n", packet_num);
+            printf("-- num %llu\n", packet_num);
             for (u_int64_t i = 0; i < packet_num; ++i)
             {
                 read_packet(bits, pos, last_pos, version_sum, final_value);
                 if (*pos > *last_pos)
                     break;
             }
-            pad_pos(pos);
         }
     }
 
-    // printf("position %lu\n", *pos);
+    if (*pos > *last_pos)
+        pad_pos(pos);
 }
 
 u_int64_t decode_transmission(char *buffer, int mode)
 {
-    for (size_t i = 0; i < 7; ++i)
-    {
-
     size_t hex_count = 0;
     u_int8_t bits[BITS_CAP] = {0};
 
@@ -126,40 +121,36 @@ u_int64_t decode_transmission(char *buffer, int mode)
 
     // print the bitstream
     for (size_t i = 0; i < bytes_count; ++i)
-        printf("%X", bits[i]);
-        // print_bitstream(bits[i]);
+        print_bitstream(bits[i]);
     printf("\n");
 
-    // // find position where 0's start on the right to make sure not to decode righthand padding
-    // size_t last_pos = bytes_count * BITS_PER_BYTE - 1, pos = last_pos;
-    // while (read_nbits(bits, &pos, 1) == 0)
-    // {
-    //     --last_pos;
-    //     pos = last_pos;
-    // }
-
-    // // decode the transmission
-    // u_int64_t version_sum = 0, final_value;
-    // pos = 0;
-
-    // while (pos <= last_pos)
-    // {
-    //     read_packet(bits, &pos, &last_pos, &version_sum, &final_value);
-    //     // printf("=========================== sum %llu\n", version_sum);
-    // }
-
-    ++buffer;
+    // find position where 0's start on the righthand side to make sure not to decode padding
+    size_t last_pos = bytes_count * BITS_PER_BYTE - 1, pos = last_pos;
+    while (read_nbits(bits, &pos, 1) == 0)
+    {
+        --last_pos;
+        pos = last_pos;
     }
 
-    return 0;
+    // decode the transmission
+    u_int64_t version_sum = 0, final_value;
+    pos = 0;
+
+    while (pos <= last_pos)
+    {
+        read_packet(bits, &pos, &last_pos, &version_sum, &final_value);
+        printf("======= sum %llu\n", version_sum);
+    }
+
+    return version_sum;
 }
 
 int main()
 {
-    char *buffer = read_file("samples.txt");
+    char *buffer = read_file("input.txt");
 
     printf("Day 16!\n");
-    printf("* pt. 1: %llu\n", decode_transmission("samples.txt", VERSION));
+    printf("* pt. 1: %llu\n", decode_transmission(buffer, VERSION));
     // printf("* pt. 2: %lu\n", decode_transmission(buffer, VALUE));
 
     free(buffer);
