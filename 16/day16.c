@@ -102,7 +102,6 @@ u_int64_t read_packet(u_int8_t *bits,
                  size_t *pos,
                  size_t *last_pos,
                  u_int64_t *version_sum,
-                 u_int64_t *curr_value,
                  u_int64_t *final_value)
 {
     if (*pos > *last_pos)
@@ -114,9 +113,11 @@ u_int64_t read_packet(u_int8_t *bits,
     u_int64_t type_id = read_nbits(bits, pos, TYP_BITS);
     printf("type %llu, ver %llu\n", type_id, version);
 
+    u_int64_t curr_value = 0;
+
     if (type_id == 4)
     {
-        *curr_value = read_value(bits, pos);
+        curr_value = read_value(bits, pos);
     }
     else
     {
@@ -126,21 +127,19 @@ u_int64_t read_packet(u_int8_t *bits,
         {
             u_int64_t lenght = read_nbits(bits, pos, LEN_BITS);
             u_int64_t end = *pos + lenght;
-            // printf("-- len %llu\n", lenght);
             while (*pos < end && *pos <= *last_pos)
             {
-                u_int64_t tmp_value = read_packet(bits, pos, last_pos, version_sum, curr_value, final_value);
-                *curr_value = calculate(type_id, *curr_value, tmp_value);
+                u_int64_t tmp_value = read_packet(bits, pos, last_pos, version_sum, final_value);
+                curr_value = calculate(type_id, curr_value, tmp_value);
             }
         }
         else
         {
             u_int64_t packet_num = read_nbits(bits, pos, NUM_BITS);
-            // printf("-- num %llu\n", packet_num);
             for (u_int64_t i = 0; i < packet_num; ++i)
             {
-                u_int64_t tmp_value = read_packet(bits, pos, last_pos, version_sum, curr_value, final_value);
-                *curr_value = calculate(type_id, *curr_value, tmp_value);
+                u_int64_t tmp_value = read_packet(bits, pos, last_pos, version_sum, final_value);
+                curr_value = calculate(type_id, curr_value, tmp_value);
                 if (*pos > *last_pos)
                     break;
             }
@@ -150,7 +149,7 @@ u_int64_t read_packet(u_int8_t *bits,
     if (*pos > *last_pos)
         pad_pos(pos);
 
-    return 0;
+    return curr_value;
 }
 
 u_int64_t decode_transmission(char *buffer, int mode)
@@ -186,14 +185,12 @@ u_int64_t decode_transmission(char *buffer, int mode)
     }
 
     // decode the transmission
-    u_int64_t version_sum = 0, curr_value = 0, final_value;
+    u_int64_t version_sum = 0, final_value;
     pos = 0;
 
-    while (pos <= last_pos)
-    {
-        read_packet(bits, &pos, &last_pos, &version_sum, &curr_value, &final_value);
-        printf("======= sum %llu\n", version_sum);
-    }
+    final_value = read_packet(bits, &pos, &last_pos, &version_sum, &final_value);
+    printf("======= sum %llu\n", version_sum);
+    printf("======= end %llu\n", final_value);
 
     ++buffer;
     }
